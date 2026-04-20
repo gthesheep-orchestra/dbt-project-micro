@@ -1,0 +1,119 @@
+# Canonical list of Snowflake SQL data types.
+# Source: https://docs.snowflake.com/en/sql-reference/intro-summary-data-types
+# DO NOT edit manually — updated automatically via .github/workflows/sync-snowflake-types.yml
+#
+# 'synonyms' lists alternative names accepted by Snowflake for the same type.
+# 'storable' is false for types that can't be used as a table column (e.g. FILE).
+# 'example' is the SQL expression used in the dbt model; set to null to exclude the column.
+
+types:
+  # ── Numeric ────────────────────────────────────────────────────────────────
+  - name: NUMBER
+    synonyms: [DECIMAL, NUMERIC, INT, INTEGER, BIGINT, SMALLINT, TINYINT, BYTEINT]
+    storable: true
+    example: "cast(42 as NUMBER)"
+
+  - name: FLOAT
+    synonyms: [FLOAT4, FLOAT8, DOUBLE, DOUBLE PRECISION, REAL]
+    storable: true
+    example: "cast(3.14 as FLOAT)"
+
+  - name: DECFLOAT
+    synonyms: []
+    storable: true
+    example: "'3.14159265358979323846264338327950288'::DECFLOAT"
+
+  # ── String & binary ────────────────────────────────────────────────────────
+  - name: VARCHAR
+    synonyms: [CHAR, CHARACTER, STRING, TEXT]
+    storable: true
+    example: "cast('hello' as VARCHAR)"
+
+  - name: BINARY
+    synonyms: [VARBINARY]
+    storable: true
+    example: "to_binary('68656c6c6f', 'HEX')"
+
+  # ── Logical ────────────────────────────────────────────────────────────────
+  - name: BOOLEAN
+    synonyms: []
+    storable: true
+    example: "cast(true as BOOLEAN)"
+
+  # ── Date & time ────────────────────────────────────────────────────────────
+  - name: DATE
+    synonyms: []
+    storable: true
+    example: "cast('2024-01-01' as DATE)"
+
+  - name: TIME
+    synonyms: []
+    storable: true
+    example: "cast('12:34:56' as TIME)"
+
+  - name: TIMESTAMP_LTZ
+    synonyms: []
+    storable: true
+    example: "cast('2024-01-01 12:34:56' as TIMESTAMP_LTZ)"
+
+  - name: TIMESTAMP_NTZ
+    synonyms: [DATETIME]
+    storable: true
+    example: "cast('2024-01-01 12:34:56' as TIMESTAMP_NTZ)"
+
+  - name: TIMESTAMP_TZ
+    synonyms: [TIMESTAMP]
+    storable: true
+    example: "cast('2024-01-01 12:34:56 +00:00' as TIMESTAMP_TZ)"
+
+  # ── Semi-structured ────────────────────────────────────────────────────────
+  - name: VARIANT
+    synonyms: []
+    storable: true
+    example: "parse_json('{\"key\": \"value\"}')"
+
+  - name: OBJECT
+    synonyms: []
+    storable: true
+    example: "parse_json('{\"key\": \"value\"}')::OBJECT"
+
+  - name: ARRAY
+    synonyms: []
+    storable: true
+    example: "parse_json('[1, 2, 3]')::ARRAY"
+
+  # ── Structured ─────────────────────────────────────────────────────────────
+  - name: MAP
+    synonyms: []
+    storable: true
+    example: "{'a': 1, 'b': 2}::MAP(VARCHAR, NUMBER)"
+
+  # ── Geospatial ─────────────────────────────────────────────────────────────
+  - name: GEOGRAPHY
+    synonyms: []
+    storable: true
+    example: "to_geography('POINT(-122.4194 37.7749)')"
+
+  - name: GEOMETRY
+    synonyms: []
+    storable: true
+    example: "to_geometry('POINT(-122.4194 37.7749)')"
+
+  # ── UUID ───────────────────────────────────────────────────────────────────
+  - name: UUID
+    synonyms: []
+    storable: true
+    example: "uuid_string()::UUID"
+
+  # ── Vector ─────────────────────────────────────────────────────────────────
+  - name: VECTOR
+    synonyms: []
+    storable: true
+    example: "[1.0, 2.0, 3.0]::VECTOR(FLOAT, 3)"
+
+  # ── Unstructured ───────────────────────────────────────────────────────────
+  # FILE can't be expressed as a literal in a SELECT — it requires a staged file reference.
+  - name: FILE
+    synonyms: []
+    storable: false
+    example: null

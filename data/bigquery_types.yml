@@ -1,0 +1,55 @@
+# Canonical list of BigQuery GoogleSQL data types.
+# Source: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+# DO NOT edit manually — updated automatically via .github/workflows/sync-bigquery-types.yml
+
+types:
+  - name: INT64
+    example: "cast(42 as INT64)"
+
+  - name: FLOAT64
+    example: "cast(3.14 as FLOAT64)"
+
+  - name: NUMERIC
+    example: "cast(3.14159265358979323846 as NUMERIC)"
+
+  - name: BIGNUMERIC
+    example: "cast(3.14159265358979323846264338327950288 as BIGNUMERIC)"
+
+  - name: BOOL
+    example: "cast(true as BOOL)"
+
+  - name: STRING
+    example: "cast('hello' as STRING)"
+
+  - name: BYTES
+    example: "cast(b'hello' as BYTES)"
+
+  - name: DATE
+    example: "cast('2024-01-01' as DATE)"
+
+  - name: TIME
+    example: "cast('12:34:56' as TIME)"
+
+  - name: DATETIME
+    example: "cast('2024-01-01T12:34:56' as DATETIME)"
+
+  - name: TIMESTAMP
+    example: "cast('2024-01-01T12:34:56Z' as TIMESTAMP)"
+
+  - name: INTERVAL
+    example: "cast('1-2 3 4:5:6' as INTERVAL)"
+
+  - name: JSON
+    example: "parse_json('{\"key\": \"value\"}')"
+
+  - name: GEOGRAPHY
+    example: "st_geogpoint(-122.4194, 37.7749)"
+
+  - name: ARRAY
+    example: "[1, 2, 3]"
+
+  - name: STRUCT
+    example: "struct('Alice' as name, 30 as age)"
+
+  - name: RANGE
+    example: "range(cast('2024-01-01' as DATE), cast('2024-12-31' as DATE))"

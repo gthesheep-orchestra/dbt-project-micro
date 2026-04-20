@@ -1,0 +1,7 @@
+name: dbt_project_micro
+version: '1.0.0'
+profile: dbt_project_micro
+
+models:
+  dbt_project_micro:
+    +materialized: table

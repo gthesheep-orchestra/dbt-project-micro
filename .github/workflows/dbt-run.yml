@@ -1,0 +1,74 @@
+name: dbt run
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Warehouse to run against
+        required: true
+        default: bigquery
+        type: choice
+        options: [bigquery, snowflake, databricks, motherduck]
+
+jobs:
+  dbt-run:
+    runs-on: ubuntu-latest
+
+    # On push/PR: run both warehouses in parallel.
+    # On manual dispatch: run only the chosen one.
+    strategy:
+      matrix:
+        target: ${{ github.event_name == 'workflow_dispatch'
+          && fromJson(format('["{0}"]', inputs.target))
+          || fromJson('["bigquery", "snowflake", "databricks", "motherduck"]') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dbt
+        run: |
+          pip install \
+            dbt-bigquery \
+            dbt-snowflake \
+            dbt-databricks \
+            dbt-duckdb
+
+      - name: Authenticate BigQuery
+        if: matrix.target == 'bigquery'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
+
+      - name: dbt run — ${{ matrix.target }}
+        env:
+          # BigQuery
+          BQ_PROJECT:  ${{ vars.BQ_PROJECT }}
+          BQ_DATASET:  ${{ vars.BQ_DATASET }}
+          # Snowflake
+          SNOWFLAKE_ACCOUNT:   ${{ vars.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:      ${{ vars.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD:  ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE:      ${{ vars.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE:  ${{ vars.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA:    ${{ vars.SNOWFLAKE_SCHEMA }}
+          # Databricks
+          DATABRICKS_HOST:      ${{ vars.DATABRICKS_HOST }}
+          DATABRICKS_HTTP_PATH: ${{ vars.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_TOKEN:     ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_CATALOG:   ${{ vars.DATABRICKS_CATALOG }}
+          DATABRICKS_SCHEMA:    ${{ vars.DATABRICKS_SCHEMA }}
+          # MotherDuck — token is read automatically from MOTHERDUCK_TOKEN
+          MOTHERDUCK_TOKEN:    ${{ secrets.MOTHERDUCK_TOKEN }}
+          MOTHERDUCK_DATABASE: ${{ vars.MOTHERDUCK_DATABASE }}
+        run: |
+          dbt run --target ${{ matrix.target }} --profiles-dir .

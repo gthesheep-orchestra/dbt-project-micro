@@ -1,0 +1,94 @@
+# Canonical list of Databricks SQL data types.
+# Source: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-datatypes
+# DO NOT edit manually — updated automatically via .github/workflows/sync-databricks-types.yml
+#
+# 'storable' is false for types that cannot be used as a table column.
+# 'example' is the SQL expression used in the dbt model; null = exclude from model.
+
+types:
+  # ── Integral numeric ───────────────────────────────────────────────────────
+  - name: TINYINT
+    synonyms: [BYTE]
+    example: "cast(1 as TINYINT)"
+
+  - name: SMALLINT
+    synonyms: [SHORT]
+    example: "cast(1 as SMALLINT)"
+
+  - name: INT
+    synonyms: [INTEGER]
+    example: "cast(42 as INT)"
+
+  - name: BIGINT
+    synonyms: [LONG]
+    example: "cast(42 as BIGINT)"
+
+  # ── Exact numeric ──────────────────────────────────────────────────────────
+  - name: DECIMAL
+    synonyms: [DEC, NUMERIC]
+    example: "cast(3.14 as DECIMAL(10, 2))"
+
+  # ── Floating point ─────────────────────────────────────────────────────────
+  - name: FLOAT
+    synonyms: [REAL]
+    example: "cast(3.14 as FLOAT)"
+
+  - name: DOUBLE
+    synonyms: [DOUBLE PRECISION]
+    example: "cast(3.14 as DOUBLE)"
+
+  # ── Boolean ────────────────────────────────────────────────────────────────
+  - name: BOOLEAN
+    example: "cast(true as BOOLEAN)"
+
+  # ── String & binary ────────────────────────────────────────────────────────
+  - name: STRING
+    synonyms: [VARCHAR, CHAR]
+    example: "cast('hello' as STRING)"
+
+  - name: BINARY
+    example: "cast('hello' as BINARY)"
+
+  # ── Date & time ────────────────────────────────────────────────────────────
+  - name: DATE
+    example: "cast('2024-01-01' as DATE)"
+
+  - name: TIMESTAMP
+    example: "cast('2024-01-01 12:34:56' as TIMESTAMP)"
+
+  - name: TIMESTAMP_NTZ
+    example: "cast('2024-01-01 12:34:56' as TIMESTAMP_NTZ)"
+
+  - name: INTERVAL
+    example: "INTERVAL '1' YEAR"
+
+  # ── Complex ────────────────────────────────────────────────────────────────
+  - name: ARRAY
+    example: "array(1, 2, 3)"
+
+  - name: MAP
+    example: "map('a', 1, 'b', 2)"
+
+  - name: STRUCT
+    example: "struct(42 as id, 'hello' as name)"
+
+  - name: VARIANT
+    example: "parse_json('{\"key\": \"value\"}')"
+
+  - name: OBJECT
+    # OBJECT is the JSON-object subtype of VARIANT; no dedicated literal syntax.
+    # Cast from VARIANT: cast(parse_json('{"k":"v"}') as OBJECT)
+    example: "cast(parse_json('{\"key\": \"value\"}') as OBJECT)"
+
+  # ── Geospatial ─────────────────────────────────────────────────────────────
+  - name: GEOMETRY
+    example: "st_geomfromwkt('POINT(-122.4194 37.7749)')"
+
+  - name: GEOGRAPHY
+    example: "st_geogpoint(-122.4194, 37.7749)"
+
+  # ── Null type ──────────────────────────────────────────────────────────────
+  # VOID represents untyped NULL and cannot be used as a column type.
+  - name: VOID
+    storable: false
+    example: null

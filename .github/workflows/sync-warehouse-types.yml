@@ -1,0 +1,109 @@
+name: Sync data types
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      warehouse:
+        description: Warehouse to sync (leave blank for all)
+        required: false
+        default: ''
+        type: choice
+        options: ['', bigquery, snowflake, databricks, motherduck]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    strategy:
+      fail-fast: false   # a failed scrape for one warehouse shouldn't block the others
+      matrix:
+        warehouse: ${{ github.event_name == 'workflow_dispatch' && inputs.warehouse != ''
+          && fromJson(format('["{0}"]', inputs.warehouse))
+          || fromJson('["bigquery", "snowflake", "databricks", "motherduck"]') }}
+
+        include:
+          - warehouse: bigquery
+            script: scripts/sync_bigquery_types.py
+            branch: chore/sync-bigquery-types
+            title: "chore: sync BigQuery data types from docs"
+            body: |
+              `data/bigquery_types.yml` updated from:
+              https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+
+          - warehouse: snowflake
+            script: scripts/sync_snowflake_types.py
+            branch: chore/sync-snowflake-types
+            title: "chore: sync Snowflake data types from docs"
+            body: |
+              `data/snowflake_types.yml` updated from:
+              https://docs.snowflake.com/en/sql-reference/intro-summary-data-types
+
+          - warehouse: databricks
+            script: scripts/sync_databricks_types.py
+            branch: chore/sync-databricks-types
+            title: "chore: sync Databricks data types from docs"
+            body: |
+              `data/databricks_types.yml` updated from:
+              https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-datatypes
+
+          - warehouse: motherduck
+            script: scripts/sync_motherduck_types.py
+            branch: chore/sync-motherduck-types
+            title: "chore: sync MotherDuck/DuckDB data types from catalog"
+            body: |
+              `data/motherduck_types.yml` updated from the `duckdb_types()` system catalog.
+              Reference: https://duckdb.org/docs/sql/data_types/overview
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r scripts/requirements.txt
+          # MotherDuck: always upgrade duckdb so new releases trigger a PR
+          if [ "${{ matrix.warehouse }}" = "motherduck" ]; then
+            pip install --upgrade duckdb
+          fi
+
+      - name: Run sync script
+        id: sync
+        run: |
+          python ${{ matrix.script }}
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Mark as changed
+        if: steps.sync.outcome == 'failure'
+        id: confirm
+        run: |
+          python ${{ matrix.script }} || true
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        if: steps.confirm.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ matrix.branch }}
+          commit-message: ${{ matrix.title }}
+          title: ${{ matrix.title }}
+          body: |
+            ${{ matrix.body }}
+
+            Newly added types will have a `TODO` example — fill in the SQL before merging.
+            Removed types should be verified against the source before merging.
+
+            Opened automatically by the `sync-data-types` workflow.
+          labels: automated, data-types
+          delete-branch: true

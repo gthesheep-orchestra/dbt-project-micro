@@ -1,0 +1,156 @@
+# Canonical list of DuckDB/MotherDuck SQL data types.
+# Source: duckdb_types() system function (Strategy B — SQL catalog, no scraping needed).
+#         Run `python scripts/sync_motherduck_types.py` to refresh against the
+#         installed duckdb Python package version.
+# DO NOT edit manually — updated automatically via .github/workflows/sync-motherduck-types.yml
+#
+# 'storable' is false for types that cannot be used as a table column.
+# 'example' is the SQL expression used in the dbt model; null = exclude from model.
+# 'synonyms' lists the most common aliases (DuckDB has many more).
+
+types:
+  # ── Signed integers ────────────────────────────────────────────────────────
+  - name: TINYINT
+    synonyms: [INT1]
+    example: "1::TINYINT"
+
+  - name: SMALLINT
+    synonyms: [INT2, SHORT]
+    example: "1::SMALLINT"
+
+  - name: INTEGER
+    synonyms: [INT, INT4, SIGNED]
+    example: "42::INTEGER"
+
+  - name: BIGINT
+    synonyms: [INT8, LONG]
+    example: "42::BIGINT"
+
+  - name: HUGEINT
+    synonyms: [INT128]
+    example: "42::HUGEINT"
+
+  # ── Unsigned integers ──────────────────────────────────────────────────────
+  - name: UTINYINT
+    synonyms: [UINT8]
+    example: "1::UTINYINT"
+
+  - name: USMALLINT
+    synonyms: [UINT16]
+    example: "1::USMALLINT"
+
+  - name: UINTEGER
+    synonyms: [UINT32]
+    example: "42::UINTEGER"
+
+  - name: UBIGINT
+    synonyms: [UINT64]
+    example: "42::UBIGINT"
+
+  - name: UHUGEINT
+    synonyms: [UINT128]
+    example: "42::UHUGEINT"
+
+  # ── Decimal & floating point ───────────────────────────────────────────────
+  - name: DECIMAL
+    synonyms: [NUMERIC, DEC]
+    example: "3.14::DECIMAL(10, 2)"
+
+  - name: FLOAT
+    synonyms: [FLOAT4, REAL]
+    example: "3.14::FLOAT"
+
+  - name: DOUBLE
+    synonyms: [FLOAT8]
+    example: "3.14::DOUBLE"
+
+  # ── Arbitrary precision ────────────────────────────────────────────────────
+  - name: BIGNUM
+    synonyms: [VARINT]
+    example: "42::VARINT"
+
+  # ── Boolean ────────────────────────────────────────────────────────────────
+  - name: BOOLEAN
+    synonyms: [BOOL, LOGICAL]
+    example: "true::BOOLEAN"
+
+  # ── String & binary ────────────────────────────────────────────────────────
+  - name: VARCHAR
+    synonyms: [TEXT, STRING, CHAR, BPCHAR, NVARCHAR]
+    example: "'hello'::VARCHAR"
+
+  - name: BLOB
+    synonyms: [BYTEA, BINARY, VARBINARY]
+    example: "encode('hello')"
+
+  - name: BIT
+    synonyms: [BITSTRING]
+    example: "'101010'::BIT"
+
+  # ── Special string-likes ───────────────────────────────────────────────────
+  - name: UUID
+    synonyms: [GUID]
+    example: "gen_random_uuid()"
+
+  # ── Date & time ────────────────────────────────────────────────────────────
+  - name: DATE
+    example: "'2024-01-01'::DATE"
+
+  - name: TIME
+    example: "'12:34:56'::TIME"
+
+  - name: TIME WITH TIME ZONE
+    synonyms: [TIMETZ]
+    example: "'12:34:56+00:00'::TIMETZ"
+
+  - name: TIME_NS
+    example: "'12:34:56.123456789'::TIME_NS"
+
+  - name: TIMESTAMP
+    synonyms: [DATETIME, TIMESTAMP_US]
+    example: "'2024-01-01 12:34:56'::TIMESTAMP"
+
+  - name: TIMESTAMP WITH TIME ZONE
+    synonyms: [TIMESTAMPTZ]
+    example: "'2024-01-01 12:34:56+00:00'::TIMESTAMPTZ"
+
+  - name: TIMESTAMP_S
+    example: "'2024-01-01 12:34:56'::TIMESTAMP_S"
+
+  - name: TIMESTAMP_MS
+    example: "'2024-01-01 12:34:56'::TIMESTAMP_MS"
+
+  - name: TIMESTAMP_NS
+    example: "'2024-01-01 12:34:56'::TIMESTAMP_NS"
+
+  - name: INTERVAL
+    example: "INTERVAL '1' YEAR"
+
+  # ── Complex / composite ────────────────────────────────────────────────────
+  - name: LIST
+    # Variable-length list (the default [] literal)
+    example: "[1, 2, 3]"
+
+  - name: ARRAY
+    # Fixed-size array (requires explicit size)
+    example: "[1, 2, 3]::INTEGER[3]"
+
+  - name: STRUCT
+    synonyms: [ROW]
+    example: "{'id': 42, 'name': 'hello'}"
+
+  - name: MAP
+    example: "map(['a', 'b'], [1, 2])"
+
+  - name: UNION
+    example: "union_value(num := 42)"
+
+  # ── Semi-structured ────────────────────────────────────────────────────────
+  - name: VARIANT
+    example: "to_variant(42)"
+
+  # ── Geospatial (requires LOAD spatial) ────────────────────────────────────
+  - name: GEOMETRY
+    # Requires the DuckDB spatial extension: LOAD spatial;
+    # Cannot be demonstrated without it, so excluded from the model.
+    example: null
