@@ -1,4 +1,4 @@
-# warehouse-types
+# dbt-project-micro
 
 A minimal dbt project that creates a single-row table containing one column per
 native data type for your chosen warehouse.
