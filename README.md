@@ -7,13 +7,30 @@ Supported warehouses: **BigQuery**, **Snowflake**, **Databricks**, **MotherDuck*
 
 ---
 
+## TLDR (Minimal Working Example)
+
+```bash
+pip install ".[motherduck]"
+export MOTHERDUCK_TOKEN=your_token
+dbt run --target motherduck --profiles-dir .
+```
+
 ## Running locally
 
 ### 1. Install
 
 ```bash
-# Install whichever adapter(s) you need
-pip install dbt-bigquery
+# Install for your warehouse
+pip install ".[bigquery]"
+pip install ".[snowflake]"
+pip install ".[databricks]"
+pip install ".[motherduck]"
+
+# Or everything at once
+pip install ".[all]"
+
+# Sync scripts only (no dbt adapter)
+pip install ".[sync]"
 ```
 
 ### 2. Configure credentials

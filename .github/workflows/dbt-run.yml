@@ -25,6 +25,12 @@ jobs:
           && fromJson(format('["{0}"]', inputs.target))
           || fromJson('["bigquery", "snowflake", "databricks", "motherduck"]') }}
 
+        include:
+          - target: bigquery
+          - target: snowflake
+          - target: databricks
+          - target: motherduck
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,12 +41,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dbt
-        run: |
-          pip install \
-            dbt-bigquery \
-            dbt-snowflake \
-            dbt-databricks \
-            dbt-duckdb
+        run: pip install ".[${{ matrix.target }}]"
 
       - name: Authenticate BigQuery
         if: matrix.target == 'bigquery'

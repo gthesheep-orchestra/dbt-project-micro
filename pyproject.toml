@@ -1,0 +1,22 @@
+[project]
+name = "warehouse-types"
+version = "0.1.0"
+description = "A dbt project that creates a single-row table of every native data type for your warehouse"
+requires-python = ">=3.9"
+ 
+[project.optional-dependencies]
+bigquery   = ["dbt-bigquery"]
+snowflake  = ["dbt-snowflake"]
+databricks = ["dbt-databricks"]
+motherduck = ["dbt-duckdb"]
+sync       = ["beautifulsoup4>=4.12", "requests>=2.31", "pyyaml>=6.0", "duckdb>=1.0"]
+all        = [
+    "dbt-bigquery",
+    "dbt-snowflake",
+    "dbt-databricks",
+    "dbt-duckdb",
+    "beautifulsoup4>=4.12",
+    "requests>=2.31",
+    "pyyaml>=6.0",
+    "duckdb>=1.0",
+]

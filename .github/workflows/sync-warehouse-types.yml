@@ -70,7 +70,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r scripts/requirements.txt
+          pip install ".[sync]"
           # MotherDuck: always upgrade duckdb so new releases trigger a PR
           if [ "${{ matrix.warehouse }}" = "motherduck" ]; then
             pip install --upgrade duckdb
