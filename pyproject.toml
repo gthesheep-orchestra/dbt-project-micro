@@ -10,6 +10,7 @@ snowflake  = ["dbt-snowflake"]
 databricks = ["dbt-databricks"]
 motherduck = ["dbt-duckdb"]
 sync       = ["beautifulsoup4>=4.12", "requests>=2.31", "pyyaml>=6.0", "duckdb>=1.0"]
+agent      = ["anthropic>=0.40", "requests>=2.31"]
 all        = [
     "dbt-bigquery",
     "dbt-snowflake",
@@ -19,4 +20,5 @@ all        = [
     "requests>=2.31",
     "pyyaml>=6.0",
     "duckdb>=1.0",
+    "anthropic>=0.40",
 ]

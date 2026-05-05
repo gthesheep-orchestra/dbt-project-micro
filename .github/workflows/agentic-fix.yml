@@ -1,0 +1,77 @@
+name: Agentic fix
+
+on:
+  workflow_run:
+    workflows: ["dbt run", "Sync data types"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Workflow run ID to analyse
+        required: true
+        type: string
+      workflow_name:
+        description: Name of the failed workflow
+        required: false
+        default: manual
+        type: string
+
+jobs:
+  fix:
+    if: github.event.workflow_run.conclusion == 'failure' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install agent dependencies
+        run: pip install anthropic requests
+
+      - name: Run fix agent
+        id: agent
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN:      ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_RUN_ID:   ${{ github.event.workflow_run.id || inputs.run_id }}
+          WORKFLOW_NAME:     ${{ github.event.workflow_run.name || inputs.workflow_name }}
+        run: python .github/agent_fix.py
+
+      - name: Read agent metadata
+        id: meta
+        run: |
+          META="$RUNNER_TEMP/agent_fix_meta.json"
+          if [ -f "$META" ]; then
+            python3 - <<'EOF'
+          import json, os
+          data = json.load(open(os.environ["RUNNER_TEMP"] + "/agent_fix_meta.json"))
+          changed   = str(data.get("changed", False)).lower()
+          pr_title  = data.get("pr_title") or "fix: automated CI repair"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"changed={changed}\n")
+              f.write(f"pr_title={pr_title}\n")
+          EOF
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open pull request
+        if: steps.meta.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token:          ${{ secrets.GITHUB_TOKEN }}
+          branch:         fix/agentic-${{ github.event.workflow_run.id || inputs.run_id }}
+          commit-message: "fix: automated repair (run ${{ github.event.workflow_run.id || inputs.run_id }})"
+          title:          ${{ steps.meta.outputs.pr_title }}
+          body-path:      ${{ runner.temp }}/agent_fix_pr_body.md
+          labels:         automated,agentic-fix
+          delete-branch:  true
