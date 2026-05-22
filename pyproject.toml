@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A dbt project that creates a single-row table of every native data type for your warehouse"
 requires-python = ">=3.9"
  
-[project.optional-dependencies]
+[dependency-groups]
 bigquery   = ["dbt-bigquery"]
 snowflake  = ["dbt-snowflake"]
 databricks = ["dbt-databricks"]
@@ -20,3 +20,6 @@ all        = [
     "pyyaml>=6.0",
     "duckdb>=1.0",
 ]
+
+[tool.uv]
+default-groups = ["bigquery"]
