@@ -73,7 +73,7 @@ jobs:
         
       - name: Install dependencies
         run: |
-          uv sync --group sync"
+          uv sync --group sync
           # MotherDuck: always upgrade duckdb so new releases trigger a PR
           if [ "${{ matrix.warehouse }}" = "motherduck" ]; then
             pip install --upgrade duckdb
