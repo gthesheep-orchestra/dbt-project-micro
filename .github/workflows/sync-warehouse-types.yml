@@ -68,9 +68,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        
       - name: Install dependencies
         run: |
-          pip install ".[sync]"
+          uv sync --group sync"
           # MotherDuck: always upgrade duckdb so new releases trigger a PR
           if [ "${{ matrix.warehouse }}" = "motherduck" ]; then
             pip install --upgrade duckdb
