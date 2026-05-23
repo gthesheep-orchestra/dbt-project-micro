@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Scrapes https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+Scrapes https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 and updates data/bigquery_types.yml with any new or removed types.
 
-The page lists each type as an <h2> with the pattern "<TYPE> type" or
-"<TYPE> data type". We extract the type name from those headings.
+Targets the #data_type_list table directly, extracting the type name from the
+first cell of each body row. This avoids false positives from section headings.
 
 Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
@@ -18,7 +18,7 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 
-DOCS_URL = "https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types"
+DOCS_URL = "https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types"
 YAML_PATH = Path(__file__).parent.parent / "data" / "bigquery_types.yml"
 
 # Known example expressions per type. New types discovered by the scraper will
@@ -49,14 +49,35 @@ def fetch_types_from_docs() -> list[str]:
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
+    # The canonical type list lives in a table with id="data_type_list".
+    # The anchor element may be a <div>, <section>, or the <table> itself,
+    # so we find the nearest following <table> if needed.
+    anchor = soup.find(id="data_type_list")
+    if anchor is None:
+        print("ERROR: Could not find #data_type_list on the page — the page structure may have changed.")
+        sys.exit(2)
+
+    table = anchor if anchor.name == "table" else anchor.find_next("table")
+    if table is None:
+        print("ERROR: Found #data_type_list anchor but no table follows it — the page structure may have changed.")
+        sys.exit(2)
+
     types: list[str] = []
-    # Each top-level type is an h2 like "Array type", "Boolean type", etc.
-    for h2 in soup.find_all("h2"):
-        text = h2.get_text(strip=True)
-        # Match patterns: "ARRAY type", "Array type", "INT64 data type"
-        m = re.match(r"^([A-Z][A-Z0-9_]*)(?:\s+data)?\s+type", text, re.IGNORECASE)
-        if m:
-            types.append(m.group(1).upper())
+    for row in table.find_all("tr"):
+        cells = row.find_all("td")
+        if not cells:
+            continue  # skip <th> header rows
+
+        # Type name is in the first cell, typically wrapped in a <code> tag.
+        first_cell = cells[0]
+        code_tag = first_cell.find("code")
+        raw = (code_tag or first_cell).get_text(strip=True)
+
+        # Normalise to uppercase and skip anything that doesn't look like an
+        # identifier (e.g. empty cells or cells containing only punctuation).
+        name = raw.upper()
+        if re.fullmatch(r"[A-Z][A-Z0-9_]*", name):
+            types.append(name)
 
     return types
 
@@ -82,7 +103,7 @@ def main() -> None:
     print(f"Fetching {DOCS_URL} ...")
     scraped = fetch_types_from_docs()
     if not scraped:
-        print("ERROR: No types found — the page structure may have changed.")
+        print("ERROR: No types found in #data_type_list — the page structure may have changed.")
         sys.exit(2)
 
     print(f"Found {len(scraped)} types: {', '.join(scraped)}")
@@ -103,7 +124,7 @@ def main() -> None:
     if removed:
         print(f"Removed types: {', '.join(sorted(removed))}")
 
-    # Rebuild the list: keep existing entries, append new ones, drop removed ones
+    # Rebuild the list: keep existing entries, append new ones, drop removed ones.
     existing = {t["name"]: t for t in current_data["types"]}
     new_types = []
     for name in scraped:  # preserve page order
@@ -118,6 +139,7 @@ def main() -> None:
     current_data["types"] = new_types
     write_yaml(current_data)
     print(f"Updated {YAML_PATH}")
+    sys.exit(0)  # CI detects changes via git diff, not exit code
 
 
 if __name__ == "__main__":
