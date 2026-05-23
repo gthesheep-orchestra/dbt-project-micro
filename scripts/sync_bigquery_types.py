@@ -17,6 +17,7 @@ from pathlib import Path
 import requests
 import yaml
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
 DOCS_URL = "https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types"
 YAML_PATH = Path(__file__).parent.parent / "data" / "bigquery_types.yml"
@@ -45,40 +46,29 @@ KNOWN_EXAMPLES: dict[str, str] = {
 
 
 def fetch_types_from_docs() -> list[str]:
-    resp = requests.get(DOCS_URL, timeout=30)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto(DOCS_URL, wait_until="networkidle")
 
-    # The canonical type list lives in a table with id="data_type_list".
-    # The anchor element may be a <div>, <section>, or the <table> itself,
-    # so we find the nearest following <table> if needed.
-    anchor = soup.find(id="data_type_list")
-    if anchor is None:
-        print("ERROR: Could not find #data_type_list on the page — the page structure may have changed.")
-        sys.exit(2)
+        # Wait for the table the JS renders after page load
+        page.wait_for_selector("#data_type_list", timeout=15_000)
 
-    table = anchor if anchor.name == "table" else anchor.find_next("table")
-    if table is None:
-        print("ERROR: Found #data_type_list anchor but no table follows it — the page structure may have changed.")
-        sys.exit(2)
+        types = page.evaluate("""
+            () => {
+                const anchor = document.getElementById('data_type_list');
+                if (!anchor) return [];
+                // The anchor may be on the heading; find the next <table>
+                let el = anchor;
+                while (el && el.tagName !== 'TABLE') el = el.nextElementSibling;
+                if (!el) return [];
+                return Array.from(el.querySelectorAll('tbody tr td:first-child'))
+                    .map(td => (td.querySelector('code') || td).textContent.trim().toUpperCase())
+                    .filter(name => /^[A-Z][A-Z0-9_]*$/.test(name));
+            }
+        """)
 
-    types: list[str] = []
-    for row in table.find_all("tr"):
-        cells = row.find_all("td")
-        if not cells:
-            continue  # skip <th> header rows
-
-        # Type name is in the first cell, typically wrapped in a <code> tag.
-        first_cell = cells[0]
-        code_tag = first_cell.find("code")
-        raw = (code_tag or first_cell).get_text(strip=True)
-
-        # Normalise to uppercase and skip anything that doesn't look like an
-        # identifier (e.g. empty cells or cells containing only punctuation).
-        name = raw.upper()
-        if re.fullmatch(r"[A-Z][A-Z0-9_]*", name):
-            types.append(name)
-
+        browser.close()
     return types
 
 

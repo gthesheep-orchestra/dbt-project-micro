@@ -9,7 +9,7 @@ bigquery   = ["dbt-bigquery"]
 snowflake  = ["dbt-snowflake"]
 databricks = ["dbt-databricks"]
 motherduck = ["dbt-duckdb"]
-sync       = ["beautifulsoup4>=4.12", "requests>=2.31", "pyyaml>=6.0", "duckdb>=1.0"]
+sync       = ["beautifulsoup4>=4.12", "requests>=2.31", "pyyaml>=6.0", "duckdb>=1.0", "playwright>=1.60", "PyYAML>=6.0"]
 all        = [
     "dbt-bigquery",
     "dbt-snowflake",

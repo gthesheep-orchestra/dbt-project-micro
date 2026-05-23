@@ -79,6 +79,10 @@ jobs:
             uv pip install --upgrade duckdb
           fi
 
+      - name: Install Playwright browser
+        run: uv run playwright install chromium --with-deps
+        if: matrix.warehouse == 'bigquery'
+
       - name: Run sync script
         run: uv run ${{ matrix.script }}
 
