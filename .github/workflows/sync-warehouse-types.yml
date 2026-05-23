@@ -74,14 +74,12 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --group sync
-          # MotherDuck: always upgrade duckdb so new releases trigger a PR
           if [ "${{ matrix.warehouse }}" = "motherduck" ]; then
             uv pip install --upgrade duckdb
           fi
-
-      - name: Install Playwright browser
-        run: uv run playwright install chromium --with-deps
-        if: matrix.warehouse == 'bigquery'
+          if [ "${{ matrix.warehouse }}" = "bigquery" ]; then
+            uv pip install --upgrade google-cloud-bigquery
+          fi
 
       - name: Run sync script
         run: uv run ${{ matrix.script }}

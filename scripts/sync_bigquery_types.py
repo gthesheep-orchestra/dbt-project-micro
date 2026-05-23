@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 """
-Scrapes https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types
-and updates data/bigquery_types.yml with any new or removed types.
+Reads the canonical BigQuery GoogleSQL data types from the official
+google-cloud-bigquery Python library (StandardSqlTypeNames enum) and updates
+data/bigquery_types.yml with any new or removed types.
 
-Targets the #data_type_list table directly, extracting the type name from the
-first cell of each body row. This avoids false positives from section headings.
+Using the library instead of scraping the docs page means:
+  - No fragile HTML parsing
+  - Types are always accurate (Google maintains the enum)
+  - New types are detected by upgrading the package in CI
 
 Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
 
-import re
 import sys
 import textwrap
 from pathlib import Path
 
-import requests
 import yaml
-from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
+from google.cloud.bigquery.enums import StandardSqlTypeNames
 
-DOCS_URL = "https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types"
+DOCS_URL = "https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types"
 YAML_PATH = Path(__file__).parent.parent / "data" / "bigquery_types.yml"
 
-# Known example expressions per type. New types discovered by the scraper will
-# get a TODO placeholder so a human can fill in the real expression.
+# Internal / non-user-facing values present in the enum but not real SQL types.
+_SKIP = {"TYPE_KIND_UNSPECIFIED", "FOREIGN"}
+
 KNOWN_EXAMPLES: dict[str, str] = {
     "INT64":      "cast(42 as INT64)",
     "FLOAT64":    "cast(3.14 as FLOAT64)",
@@ -45,30 +46,13 @@ KNOWN_EXAMPLES: dict[str, str] = {
 }
 
 
-def fetch_types_from_docs() -> list[str]:
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        page.goto(DOCS_URL, wait_until="networkidle")
-
-        # Wait for the table the JS renders after page load
-        page.wait_for_selector("#data_type_list", timeout=15_000)
-
-        types = page.evaluate("""
-            () => {
-                const anchor = document.getElementById('data_type_list');
-                if (!anchor) return [];
-                // The anchor may be on the heading; find the next <table>
-                let el = anchor;
-                while (el && el.tagName !== 'TABLE') el = el.nextElementSibling;
-                if (!el) return [];
-                return Array.from(el.querySelectorAll('tbody tr td:first-child'))
-                    .map(td => (td.querySelector('code') || td).textContent.trim().toUpperCase())
-                    .filter(name => /^[A-Z][A-Z0-9_]*$/.test(name));
-            }
-        """)
-
-        browser.close()
+def fetch_types_from_library() -> list[str]:
+    types = sorted(
+        t.value for t in StandardSqlTypeNames if t.value not in _SKIP
+    )
+    if not types:
+        print("ERROR: StandardSqlTypeNames enum is empty — check the library version.")
+        sys.exit(2)
     return types
 
 
@@ -90,12 +74,11 @@ def write_yaml(data: dict) -> None:
 
 
 def main() -> None:
-    print(f"Fetching {DOCS_URL} ...")
-    scraped = fetch_types_from_docs()
-    if not scraped:
-        print("ERROR: No types found in #data_type_list — the page structure may have changed.")
-        sys.exit(2)
+    import importlib.metadata
+    version = importlib.metadata.version("google-cloud-bigquery")
+    print(f"google-cloud-bigquery=={version}")
 
+    scraped = fetch_types_from_library()
     print(f"Found {len(scraped)} types: {', '.join(scraped)}")
 
     current_data = load_yaml()
@@ -114,10 +97,9 @@ def main() -> None:
     if removed:
         print(f"Removed types: {', '.join(sorted(removed))}")
 
-    # Rebuild the list: keep existing entries, append new ones, drop removed ones.
     existing = {t["name"]: t for t in current_data["types"]}
     new_types = []
-    for name in scraped:  # preserve page order
+    for name in scraped:  # preserve sorted order
         if name in existing:
             new_types.append(existing[name])
         else:
@@ -129,7 +111,7 @@ def main() -> None:
     current_data["types"] = new_types
     write_yaml(current_data)
     print(f"Updated {YAML_PATH}")
-    sys.exit(0)  # CI detects changes via git diff, not exit code
+    sys.exit(0)
 
 
 if __name__ == "__main__":
