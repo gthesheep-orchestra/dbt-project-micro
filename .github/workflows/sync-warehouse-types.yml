@@ -80,33 +80,30 @@ jobs:
           fi
 
       - name: Run sync script
-        id: sync
-        run: |
-          uv run ${{ matrix.script }}
-          echo "changed=false" >> "$GITHUB_OUTPUT"
-        continue-on-error: true
+        run: uv run ${{ matrix.script }}
 
-      - name: Mark as changed
-        if: steps.sync.outcome == 'failure'
-        id: confirm
+      - name: Check for changes
+        id: check
         run: |
-          uv run ${{ matrix.script }} || true
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+          if git diff --quiet "data/${{ matrix.warehouse }}_types.yml"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Open pull request
-        if: steps.confirm.outputs.changed == 'true'
+        if: steps.check.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ matrix.branch }}
           commit-message: ${{ matrix.title }}
           title: ${{ matrix.title }}
+          add-paths: data/${{ matrix.warehouse }}_types.yml   # ← only this file
           body: |
             ${{ matrix.body }}
-
             Newly added types will have a `TODO` example — fill in the SQL before merging.
             Removed types should be verified against the source before merging.
-
             Opened automatically by the `sync-data-types` workflow.
           labels: automated, data-types
           delete-branch: true

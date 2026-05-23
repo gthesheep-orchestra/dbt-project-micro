@@ -6,7 +6,7 @@ and updates data/bigquery_types.yml with any new or removed types.
 The page lists each type as an <h2> with the pattern "<TYPE> type" or
 "<TYPE> data type". We extract the type name from those headings.
 
-Exits with code 1 if the file was changed (signals the CI workflow to open a PR).
+Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
 
 import re
@@ -118,7 +118,6 @@ def main() -> None:
     current_data["types"] = new_types
     write_yaml(current_data)
     print(f"Updated {YAML_PATH}")
-    sys.exit(1)  # signals CI: file changed, open a PR
 
 
 if __name__ == "__main__":

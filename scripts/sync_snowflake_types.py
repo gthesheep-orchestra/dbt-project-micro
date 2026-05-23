@@ -8,9 +8,7 @@ Each "Type" cell lists the canonical name, optionally followed by synonyms
 separated by commas (e.g. "DECIMAL, NUMERIC" or "INT, INTEGER, BIGINT, ...").
 We take the first token as the canonical name.
 
-Exits with code 1 if the file was changed (signals CI to open a PR),
-         code 0 if nothing changed,
-         code 2 if the scrape failed.
+Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
 
 import re
@@ -174,7 +172,6 @@ def main() -> None:
     current_data["types"] = new_types
     write_yaml(current_data)
     print(f"Updated {YAML_PATH}")
-    sys.exit(1)  # signals CI: file changed, open a PR
 
 
 if __name__ == "__main__":

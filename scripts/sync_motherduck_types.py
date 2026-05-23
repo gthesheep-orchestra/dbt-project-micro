@@ -9,7 +9,7 @@ credentials needed.
 The script detects additions and removals against the current YAML and rewrites it
 if anything changed, preserving existing 'example' and 'synonyms' values.
 
-Exits 0 = no changes, 1 = file updated (CI opens PR), 2 = query error.
+Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
 
 import sys
@@ -143,7 +143,6 @@ def main() -> None:
     current_data["types"] = new_types
     write_yaml(current_data)
     print(f"Updated {YAML_PATH}")
-    sys.exit(1)
 
 
 if __name__ == "__main__":

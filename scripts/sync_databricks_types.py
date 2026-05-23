@@ -7,7 +7,7 @@ The page contains a table where each cell holds a link of the form:
   <a href="/aws/en/sql/language-manual/data-types/{name}-type">
 We extract type names from those href patterns.
 
-Exits 0 = no changes, 1 = file updated (CI opens PR), 2 = fetch error.
+Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
 
 import re
@@ -148,7 +148,6 @@ def main() -> None:
     current_data["types"] = new_types
     write_yaml(current_data)
     print(f"Updated {YAML_PATH}")
-    sys.exit(1)   # signals CI: file changed, open a PR
 
 
 if __name__ == "__main__":
