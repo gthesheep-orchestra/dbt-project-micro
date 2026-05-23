@@ -3,10 +3,9 @@
 Scrapes https://docs.snowflake.com/en/sql-reference/intro-summary-data-types
 and updates data/snowflake_types.yml with any new or removed types.
 
-The summary page contains an HTML table with columns: Category | Type | Notes.
-Each "Type" cell lists the canonical name, optionally followed by synonyms
-separated by commas (e.g. "DECIMAL, NUMERIC" or "INT, INTEGER, BIGINT, ...").
-We take the first token as the canonical name.
+The summary page has a Category | Type | Notes table. We use the Notes column
+to distinguish canonical types from synonym rows: if Notes says "Synonymous
+with X", those names are folded in as synonyms of X rather than new types.
 
 Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
@@ -20,11 +19,9 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 
-DOCS_URL = "https://docs.snowflake.com/en/sql-reference/intro-summary-data-types"
+DOCS_URL  = "https://docs.snowflake.com/en/sql-reference/intro-summary-data-types"
 YAML_PATH = Path(__file__).parent.parent / "data" / "snowflake_types.yml"
 
-# Canonical example expressions per type.
-# New types discovered by the scraper get a TODO placeholder.
 KNOWN_EXAMPLES: dict[str, str | None] = {
     "NUMBER":        "cast(42 as NUMBER)",
     "FLOAT":         "cast(3.14 as FLOAT)",
@@ -34,6 +31,7 @@ KNOWN_EXAMPLES: dict[str, str | None] = {
     "BOOLEAN":       "cast(true as BOOLEAN)",
     "DATE":          "cast('2024-01-01' as DATE)",
     "TIME":          "cast('12:34:56' as TIME)",
+    "TIMESTAMP":     "cast('2024-01-01 12:34:56' as TIMESTAMP)",
     "TIMESTAMP_LTZ": "cast('2024-01-01 12:34:56' as TIMESTAMP_LTZ)",
     "TIMESTAMP_NTZ": "cast('2024-01-01 12:34:56' as TIMESTAMP_NTZ)",
     "TIMESTAMP_TZ":  "cast('2024-01-01 12:34:56 +00:00' as TIMESTAMP_TZ)",
@@ -45,26 +43,19 @@ KNOWN_EXAMPLES: dict[str, str | None] = {
     "GEOMETRY":      "to_geometry('POINT(-122.4194 37.7749)')",
     "UUID":          "uuid_string()::UUID",
     "VECTOR":        "[1.0, 2.0, 3.0]::VECTOR(FLOAT, 3)",
-    # FILE can't be expressed as a SELECT literal
     "FILE":          None,
 }
 
-# Types that cannot be stored as a regular table column
-NON_STORABLE = {"FILE"}
+NON_STORABLE: set[str] = {"FILE"}
+SKIP:         set[str] = {"NOT APPLICABLE"}
 
-# Types that are purely user-defined or meta-categories — skip entirely
-SKIP = {"NOT APPLICABLE"}
+# Matches "Synonymous with TYPENAME" or "Synonymous with TYPENAME." in Notes.
+_SYNONYMOUS_RE = re.compile(r"synonymous with\s+([A-Z_]+)", re.IGNORECASE)
 
 
-def parse_type_cell(cell_text: str) -> tuple[str, list[str]]:
-    """Return (canonical_name, [synonyms]) from a Type cell."""
-    # Split on comma, strip whitespace
-    parts = [p.strip() for p in cell_text.split(",") if p.strip()]
-    if not parts:
-        return "", []
-    canonical = parts[0].upper()
-    synonyms = [p.upper() for p in parts[1:]]
-    return canonical, synonyms
+def _parse_names(cell_text: str) -> list[str]:
+    """Split a Type cell on commas, returning normalised uppercase names."""
+    return [p.strip().upper() for p in cell_text.split(",") if p.strip()]
 
 
 def fetch_types_from_docs() -> list[dict]:
@@ -72,30 +63,54 @@ def fetch_types_from_docs() -> list[dict]:
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    # Find the summary table — it's the only table on the page
     table = soup.find("table")
     if not table:
         raise ValueError("Could not find the summary table on the page.")
 
-    seen: set[str] = set()
-    results: list[dict] = []
+    # canonical_name -> {"canonical": str, "synonyms": list[str]}
+    type_map:   dict[str, dict] = {}
+    type_order: list[str]       = []   # preserves page order
 
-    for row in table.find_all("tr")[1:]:  # skip header row
+    for row in table.find_all("tr")[1:]:   # skip header row
         cells = row.find_all(["td", "th"])
         if len(cells) < 2:
             continue
-        type_text = cells[1].get_text(separator=", ", strip=True)
-        canonical, synonyms = parse_type_cell(type_text)
 
-        if not canonical or canonical in SKIP or canonical in seen:
+        type_text  = cells[1].get_text(separator=", ", strip=True)
+        notes_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
+
+        names = _parse_names(type_text)
+        if not names or names[0] in SKIP:
             continue
 
-        # Deduplicate ARRAY and OBJECT that appear in both semi-structured
-        # and structured sections — keep only the first occurrence.
-        seen.add(canonical)
-        results.append({"canonical": canonical, "synonyms": synonyms})
+        # If Notes say "Synonymous with X", fold all names in this row into
+        # X's synonym list rather than treating them as a new canonical type.
+        m = _SYNONYMOUS_RE.search(notes_text)
+        if m:
+            ref = m.group(1).upper()
+            if ref in type_map:
+                existing = type_map[ref]["synonyms"]
+                for name in names:
+                    if name not in existing:
+                        existing.append(name)
+            # If ref not yet seen, silently skip — shouldn't happen given page order.
+            continue
 
-    return results
+        # New canonical type: first name is canonical, rest are synonyms.
+        canonical = names[0]
+        synonyms  = names[1:]
+
+        if canonical not in type_map:
+            type_map[canonical] = {"canonical": canonical, "synonyms": synonyms}
+            type_order.append(canonical)
+        else:
+            # ARRAY and OBJECT each appear in both semi-structured and structured
+            # sections — merge any new synonyms on the second occurrence.
+            for name in synonyms:
+                if name not in type_map[canonical]["synonyms"]:
+                    type_map[canonical]["synonyms"].append(name)
+
+    return [type_map[name] for name in type_order]
 
 
 def load_yaml() -> dict:
@@ -111,7 +126,7 @@ def write_yaml(data: dict) -> None:
         #
         # 'synonyms' lists alternative names accepted by Snowflake for the same type.
         # 'storable' is false for types that can't be used as a table column (e.g. FILE).
-        # 'example' is the SQL expression used in the dbt model; set to null to exclude the column.
+        # 'example' is the SQL expression used in the dbt model; null excludes the column.
 
     """)
     with YAML_PATH.open("w") as f:
@@ -121,7 +136,12 @@ def write_yaml(data: dict) -> None:
 
 def main() -> None:
     print(f"Fetching {DOCS_URL} ...")
-    scraped = fetch_types_from_docs()
+    try:
+        scraped = fetch_types_from_docs()
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(2)
+
     if not scraped:
         print("ERROR: No types found — the page structure may have changed.")
         sys.exit(2)
@@ -129,36 +149,34 @@ def main() -> None:
     scraped_names = [t["canonical"] for t in scraped]
     print(f"Found {len(scraped_names)} types: {', '.join(scraped_names)}")
 
-    current_data = load_yaml()
+    current_data  = load_yaml()
     current_types = {t["name"]: t for t in current_data["types"]}
-    scraped_set = set(scraped_names)
+    scraped_set   = set(scraped_names)
 
-    added = scraped_set - current_types.keys()
+    added   = scraped_set - current_types.keys()
     removed = current_types.keys() - scraped_set
 
-    if not added and not removed:
-        # Also check for synonym changes
-        synonym_changed = any(
-            set(t["synonyms"]) != set(current_types[t["canonical"]].get("synonyms", []))
-            for t in scraped
-            if t["canonical"] in current_types
-        )
-        if not synonym_changed:
-            print("No changes detected.")
-            sys.exit(0)
+    synonym_changed = any(
+        set(t["synonyms"]) != set(current_types[t["canonical"]].get("synonyms", []))
+        for t in scraped
+        if t["canonical"] in current_types
+    )
+
+    if not added and not removed and not synonym_changed:
+        print("No changes detected.")
+        sys.exit(0)
 
     if added:
         print(f"New types: {', '.join(sorted(added))}")
     if removed:
         print(f"Removed types: {', '.join(sorted(removed))}")
 
-    # Rebuild in page order: update existing entries, append new, drop removed
     new_types = []
     for t in scraped:
         name = t["canonical"]
         if name in current_types:
             entry = dict(current_types[name])
-            entry["synonyms"] = t["synonyms"]  # refresh synonyms
+            entry["synonyms"] = t["synonyms"]
             new_types.append(entry)
         else:
             example = KNOWN_EXAMPLES.get(name, f"TODO -- add example for {name}")
