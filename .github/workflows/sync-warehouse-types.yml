@@ -76,13 +76,13 @@ jobs:
           uv sync --group sync
           # MotherDuck: always upgrade duckdb so new releases trigger a PR
           if [ "${{ matrix.warehouse }}" = "motherduck" ]; then
-            pip install --upgrade duckdb
+            uv pip install --upgrade duckdb
           fi
 
       - name: Run sync script
         id: sync
         run: |
-          python ${{ matrix.script }}
+          uv run ${{ matrix.script }}
           echo "changed=false" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
@@ -90,7 +90,7 @@ jobs:
         if: steps.sync.outcome == 'failure'
         id: confirm
         run: |
-          python ${{ matrix.script }} || true
+          uv run ${{ matrix.script }} || true
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Open pull request
