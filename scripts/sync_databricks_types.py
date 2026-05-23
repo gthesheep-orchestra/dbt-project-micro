@@ -51,8 +51,12 @@ KNOWN_EXAMPLES: dict[str, str | None] = {
 
 NON_STORABLE: set[str] = {"VOID"}
 
-# href pattern: /aws/en/sql/language-manual/data-types/{slug}-type
-_TYPE_HREF_RE = re.compile(r"/sql/language-manual/data-types/([a-z0-9_]+)-type$")
+# Move SLUG_OVERRIDES to module level, out of the function
+SLUG_OVERRIDES: dict[str, str] = {"NULL": "VOID"}
+
+# href pattern: /sql/language-manual/data-types/{slug}-type
+_TYPE_HREF_RE = re.compile(r"/sql/language-manual/data-types/([a-z0-9_-]+)-type$")
+_HEADING_RE = re.compile(r"^h[1-6]$")
 
 
 def fetch_types_from_docs() -> list[str]:
@@ -66,22 +70,44 @@ def fetch_types_from_docs() -> list[str]:
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
+    # Find the #supported-data-types section anchor. It may sit on the heading
+    # itself or on an <a>/<span> inside it — handle both.
+    anchor = soup.find(id="supported-data-types")
+    if anchor is None:
+        print("ERROR: Could not find #supported-data-types — page structure may have changed.")
+        sys.exit(2)
+
+    heading = (
+        anchor
+        if _HEADING_RE.match(anchor.name)
+        else anchor.find_parent(_HEADING_RE)
+    )
+    if heading is None:
+        print("ERROR: Found #supported-data-types but couldn't locate its heading element.")
+        sys.exit(2)
+
+    # Walk siblings until the next heading of equal or higher rank (= lower number).
+    heading_level = int(heading.name[1])
+    section_nodes = []
+    for sibling in heading.next_siblings:
+        if sibling.name and _HEADING_RE.match(sibling.name) and int(sibling.name[1]) <= heading_level:
+            break
+        section_nodes.append(sibling)
+
     seen: set[str] = set()
     types: list[str] = []
-
-    for a in soup.find_all("a", href=True):
-        m = _TYPE_HREF_RE.search(a["href"])
-        if not m:
+    for node in section_nodes:
+        if not hasattr(node, "find_all"):
             continue
-        # Convert slug to canonical name: timestamp_ntz → TIMESTAMP_NTZ
-        name = m.group(1).upper().replace("-", "_")
-        # Strip trailing suffixes that appear in some slugs (e.g. 'null' for VOID)
-        # Map known slug→name overrides
-        SLUG_OVERRIDES = {"NULL": "VOID"}
-        name = SLUG_OVERRIDES.get(name, name)
-        if name not in seen:
-            seen.add(name)
-            types.append(name)
+        for a in node.find_all("a", href=True):
+            m = _TYPE_HREF_RE.search(a["href"])
+            if not m:
+                continue
+            name = m.group(1).upper().replace("-", "_")
+            name = SLUG_OVERRIDES.get(name, name)
+            if name not in seen:
+                seen.add(name)
+                types.append(name)
 
     return types
 
