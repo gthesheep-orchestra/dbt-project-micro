@@ -5,16 +5,18 @@ description = "A dbt project that creates a single-row table of every native dat
 requires-python = ">=3.9"
  
 [dependency-groups]
+core       = ["dbt-core"]
 bigquery   = ["dbt-bigquery"]
 snowflake  = ["dbt-snowflake"]
 databricks = ["dbt-databricks"]
 motherduck = ["dbt-duckdb"]
-sync       = ["beautifulsoup4>=4.12", "requests>=2.31", "pyyaml>=6.0", "duckdb>=1.0"]
+sync       = ["google-cloud-bigquery>=3.0", "beautifulsoup4>=4.12", "requests>=2.31", "pyyaml>=6.0", "duckdb>=1.0"]
 all        = [
     "dbt-bigquery",
     "dbt-snowflake",
     "dbt-databricks",
     "dbt-duckdb",
+    "google-cloud-bigquery>=3.0",
     "beautifulsoup4>=4.12",
     "requests>=2.31",
     "pyyaml>=6.0",
@@ -22,4 +24,4 @@ all        = [
 ]
 
 [tool.uv]
-default-groups = ["bigquery"]
+default-groups = ["core", "bigquery"]

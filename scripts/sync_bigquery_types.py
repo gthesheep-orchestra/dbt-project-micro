@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
 """
-Scrapes https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
-and updates data/bigquery_types.yml with any new or removed types.
+Reads the canonical BigQuery GoogleSQL data types from the official
+google-cloud-bigquery Python library (StandardSqlTypeNames enum) and updates
+data/bigquery_types.yml with any new or removed types.
 
-The page lists each type as an <h2> with the pattern "<TYPE> type" or
-"<TYPE> data type". We extract the type name from those headings.
+Using the library instead of scraping the docs page means:
+  - No fragile HTML parsing
+  - Types are always accurate (Google maintains the enum)
+  - New types are detected by upgrading the package in CI
 
-Exits with code 1 if the file was changed (signals the CI workflow to open a PR).
+Exits with code 0 always. The CI workflow detects file changes via git diff.
 """
 
-import re
 import sys
 import textwrap
 from pathlib import Path
 
-import requests
 import yaml
-from bs4 import BeautifulSoup
+from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 DOCS_URL = "https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types"
 YAML_PATH = Path(__file__).parent.parent / "data" / "bigquery_types.yml"
 
-# Known example expressions per type. New types discovered by the scraper will
-# get a TODO placeholder so a human can fill in the real expression.
+# Internal / non-user-facing values present in the enum but not real SQL types.
+_SKIP = {"TYPE_KIND_UNSPECIFIED", "FOREIGN"}
+
 KNOWN_EXAMPLES: dict[str, str] = {
     "INT64":      "cast(42 as INT64)",
     "FLOAT64":    "cast(3.14 as FLOAT64)",
@@ -44,20 +46,13 @@ KNOWN_EXAMPLES: dict[str, str] = {
 }
 
 
-def fetch_types_from_docs() -> list[str]:
-    resp = requests.get(DOCS_URL, timeout=30)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
-
-    types: list[str] = []
-    # Each top-level type is an h2 like "Array type", "Boolean type", etc.
-    for h2 in soup.find_all("h2"):
-        text = h2.get_text(strip=True)
-        # Match patterns: "ARRAY type", "Array type", "INT64 data type"
-        m = re.match(r"^([A-Z][A-Z0-9_]*)(?:\s+data)?\s+type", text, re.IGNORECASE)
-        if m:
-            types.append(m.group(1).upper())
-
+def fetch_types_from_library() -> list[str]:
+    types = sorted(
+        t.value for t in StandardSqlTypeNames if t.value not in _SKIP
+    )
+    if not types:
+        print("ERROR: StandardSqlTypeNames enum is empty — check the library version.")
+        sys.exit(2)
     return types
 
 
@@ -79,12 +74,11 @@ def write_yaml(data: dict) -> None:
 
 
 def main() -> None:
-    print(f"Fetching {DOCS_URL} ...")
-    scraped = fetch_types_from_docs()
-    if not scraped:
-        print("ERROR: No types found — the page structure may have changed.")
-        sys.exit(2)
+    import importlib.metadata
+    version = importlib.metadata.version("google-cloud-bigquery")
+    print(f"google-cloud-bigquery=={version}")
 
+    scraped = fetch_types_from_library()
     print(f"Found {len(scraped)} types: {', '.join(scraped)}")
 
     current_data = load_yaml()
@@ -103,10 +97,9 @@ def main() -> None:
     if removed:
         print(f"Removed types: {', '.join(sorted(removed))}")
 
-    # Rebuild the list: keep existing entries, append new ones, drop removed ones
     existing = {t["name"]: t for t in current_data["types"]}
     new_types = []
-    for name in scraped:  # preserve page order
+    for name in scraped:  # preserve sorted order
         if name in existing:
             new_types.append(existing[name])
         else:
@@ -118,7 +111,7 @@ def main() -> None:
     current_data["types"] = new_types
     write_yaml(current_data)
     print(f"Updated {YAML_PATH}")
-    sys.exit(1)  # signals CI: file changed, open a PR
+    sys.exit(0)
 
 
 if __name__ == "__main__":
