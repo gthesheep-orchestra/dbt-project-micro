@@ -67,11 +67,11 @@ def fetch_types_from_docs() -> list[dict]:
     if not table:
         raise ValueError("Could not find the summary table on the page.")
 
-    # canonical_name -> {"canonical": str, "synonyms": list[str]}
     type_map:   dict[str, dict] = {}
-    type_order: list[str]       = []   # preserves page order
+    type_order: list[str]       = []
+    deferred:   list[tuple[str, list[str]]] = []  # (ref_canonical, [synonym_names])
 
-    for row in table.find_all("tr")[1:]:   # skip header row
+    for row in table.find_all("tr")[1:]:
         cells = row.find_all(["td", "th"])
         if len(cells) < 2:
             continue
@@ -83,20 +83,18 @@ def fetch_types_from_docs() -> list[dict]:
         if not names or names[0] in SKIP:
             continue
 
-        # If Notes say "Synonymous with X", fold all names in this row into
-        # X's synonym list rather than treating them as a new canonical type.
         m = _SYNONYMOUS_RE.search(notes_text)
         if m:
             ref = m.group(1).upper()
             if ref in type_map:
-                existing = type_map[ref]["synonyms"]
                 for name in names:
-                    if name not in existing:
-                        existing.append(name)
-            # If ref not yet seen, silently skip — shouldn't happen given page order.
+                    if name not in type_map[ref]["synonyms"]:
+                        type_map[ref]["synonyms"].append(name)
+            else:
+                # ref not yet seen (e.g. DATETIME before TIMESTAMP_NTZ) — defer
+                deferred.append((ref, names))
             continue
 
-        # New canonical type: first name is canonical, rest are synonyms.
         canonical = names[0]
         synonyms  = names[1:]
 
@@ -104,14 +102,21 @@ def fetch_types_from_docs() -> list[dict]:
             type_map[canonical] = {"canonical": canonical, "synonyms": synonyms}
             type_order.append(canonical)
         else:
-            # ARRAY and OBJECT each appear in both semi-structured and structured
-            # sections — merge any new synonyms on the second occurrence.
             for name in synonyms:
                 if name not in type_map[canonical]["synonyms"]:
                     type_map[canonical]["synonyms"].append(name)
 
-    return [type_map[name] for name in type_order]
+    # Second pass: apply deferred synonyms now that all canonicals are known
+    for ref, names in deferred:
+        if ref not in type_map:
+            print(f"WARNING: synonym row references unknown type '{ref}' — skipping {names}")
+            continue
+        for name in names:
+            if name not in type_map[ref]["synonyms"]:
+                type_map[ref]["synonyms"].append(name)
 
+    return [type_map[name] for name in type_order]
+    
 
 def load_yaml() -> dict:
     with YAML_PATH.open() as f:

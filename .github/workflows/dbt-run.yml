@@ -75,4 +75,4 @@ jobs:
           MOTHERDUCK_TOKEN:    ${{ secrets.MOTHERDUCK_TOKEN }}
           MOTHERDUCK_DATABASE: ${{ vars.MOTHERDUCK_DATABASE }}
         run: |
-          dbt run --target ${{ matrix.target }} --profiles-dir .
+          uv run dbt run --target ${{ matrix.target }} --profiles-dir .
