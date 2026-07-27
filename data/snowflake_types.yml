@@ -8,43 +8,50 @@
 
 types:
 - name: NUMBER
-  synonyms:
-  - DECIMAL
-  - NUMERIC
-  - INT
-  - INTEGER
-  - BIGINT
-  - SMALLINT
-  - TINYINT
-  - BYTEINT
-  storable: true
-  example: cast(42 as NUMBER)
-- name: FLOAT
-  synonyms:
-  - FLOAT4
-  - FLOAT8
-  - DOUBLE
-  - DOUBLE PRECISION
-  - REAL
-  storable: true
-  example: cast(3.14 as FLOAT)
-- name: DECFLOAT
   synonyms: []
   storable: true
-  example: '''3.14159265358979323846264338327950288''::DECFLOAT'
-- name: VARCHAR
+  example: cast(42 as NUMBER)
+- name: SYNONYMOUS WITH NUMBER.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH NUMBER.
+- name: SYNONYMOUS WITH NUMBER
   synonyms:
-  - CHAR
-  - CHARACTER
-  - STRING
-  - TEXT
+  - EXCEPT PRECISION AND SCALE CAN’T BE SPECIFIED.
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH NUMBER
+- name: '[1]'
+  synonyms: []
+  storable: true
+  example: TODO -- add example for [1]
+- name: SYNONYMOUS WITH FLOAT.
+  synonyms:
+  - '[1]'
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH FLOAT.
+- name: STORES NUMBERS EXACTLY
+  synonyms:
+  - WITH UP TO 38 SIGNIFICANT DIGITS OF PRECISION
+  - AND USES A DYNAMIC BASE-10 EXPONENT.
+  storable: true
+  example: TODO -- add example for STORES NUMBERS EXACTLY
+- name: VARCHAR
+  synonyms: []
   storable: true
   example: cast('hello' as VARCHAR)
-- name: BINARY
+- name: SYNONYMOUS WITH VARCHAR
   synonyms:
-  - VARBINARY
+  - EXCEPT THE DEFAULT LENGTH IS VARCHAR(1).
   storable: true
-  example: to_binary('68656c6c6f', 'HEX')
+  example: TODO -- add example for SYNONYMOUS WITH VARCHAR
+- name: SYNONYMOUS WITH VARCHAR.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH VARCHAR.
+- name: SYNONYMOUS WITH BINARY.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH BINARY.
 - name: BOOLEAN
   synonyms: []
   storable: true
@@ -53,43 +60,39 @@ types:
   synonyms: []
   storable: true
   example: cast('2024-01-01' as DATE)
-- name: TIME
+- name: SYNONYMOUS WITH TIMESTAMP_NTZ.
   synonyms: []
   storable: true
-  example: cast('12:34:56' as TIME)
-- name: TIMESTAMP
+  example: TODO -- add example for SYNONYMOUS WITH TIMESTAMP_NTZ.
+- name: ALIAS FOR ONE OF THE TIMESTAMP VARIATIONS (TIMESTAMP_NTZ BY DEFAULT).
   synonyms: []
   storable: true
-  example: cast('2024-01-01 12:34:56' as TIMESTAMP)
-- name: TIMESTAMP_LTZ
-  synonyms: []
-  storable: true
-  example: cast('2024-01-01 12:34:56' as TIMESTAMP_LTZ)
-- name: TIMESTAMP_NTZ
+  example: TODO -- add example for ALIAS FOR ONE OF THE TIMESTAMP VARIATIONS (TIMESTAMP_NTZ
+    BY DEFAULT).
+- name: TIMESTAMP WITH LOCAL TIME ZONE; TIME ZONE
   synonyms:
-  - DATETIME
+  - IF PROVIDED
+  - ISN’T STORED.
   storable: true
-  example: cast('2024-01-01 12:34:56' as TIMESTAMP_NTZ)
-- name: TIMESTAMP_TZ
+  example: TODO -- add example for TIMESTAMP WITH LOCAL TIME ZONE; TIME ZONE
+- name: TIMESTAMP WITH NO TIME ZONE; TIME ZONE
+  synonyms:
+  - IF PROVIDED
+  - ISN’T STORED.
+  storable: true
+  example: TODO -- add example for TIMESTAMP WITH NO TIME ZONE; TIME ZONE
+- name: TIMESTAMP WITH TIME ZONE.
   synonyms: []
   storable: true
-  example: cast('2024-01-01 12:34:56 +00:00' as TIMESTAMP_TZ)
+  example: TODO -- add example for TIMESTAMP WITH TIME ZONE.
 - name: VARIANT
   synonyms: []
   storable: true
   example: 'parse_json(''{"key": "value"}'')'
-- name: OBJECT
-  synonyms: []
-  storable: true
-  example: 'parse_json(''{"key": "value"}'')::OBJECT'
 - name: ARRAY
   synonyms: []
   storable: true
   example: parse_json('[1, 2, 3]')::ARRAY
-- name: MAP
-  synonyms: []
-  storable: true
-  example: '{''a'': 1, ''b'': 2}::MAP(VARCHAR, NUMBER)'
 - name: FILE
   synonyms: []
   storable: false
@@ -98,10 +101,6 @@ types:
   synonyms: []
   storable: true
   example: to_geography('POINT(-122.4194 37.7749)')
-- name: GEOMETRY
-  synonyms: []
-  storable: true
-  example: to_geometry('POINT(-122.4194 37.7749)')
 - name: UUID
   synonyms: []
   storable: true
@@ -110,3 +109,7 @@ types:
   synonyms: []
   storable: true
   example: '[1.0, 2.0, 3.0]::VECTOR(FLOAT, 3)'
+- name: UNKNOWN
+  synonyms: []
+  storable: true
+  example: TODO -- add example for UNKNOWN
