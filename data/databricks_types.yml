@@ -61,6 +61,9 @@ types:
   example: st_geomfromwkt('POINT(-122.4194 37.7749)')
 - name: ARRAY
   example: array(1, 2, 3)
+- name: FILE
+  storable: true
+  example: TODO -- add example for FILE
 - name: MAP
   example: map('a', 1, 'b', 2)
 - name: STRUCT
