@@ -10,28 +10,36 @@ Supported warehouses: **BigQuery**, **Snowflake**, **Databricks**, **MotherDuck*
 ## TLDR (Minimal Working Example)
 
 ```bash
-pip install ".[motherduck]"
+uv sync --group core --group motherduck
 export MOTHERDUCK_TOKEN=your_token
-dbt run --target motherduck --profiles-dir .
+uv run dbt run --target motherduck --profiles-dir .
 ```
 
 ## Running locally
 
 ### 1. Install
 
+Dependencies are declared as [PEP 735 dependency groups](https://peps.python.org/pep-0735/)
+in `pyproject.toml`, installed with [uv](https://docs.astral.sh/uv/getting-started/installation/).
+This project isn't a pip-installable package, so `pip install .` /
+`pip install ".[extra]"` won't work here — use `uv sync --group <name>` instead.
+
 ```bash
 # Install for your warehouse
-pip install ".[bigquery]"
-pip install ".[snowflake]"
-pip install ".[databricks]"
-pip install ".[motherduck]"
+uv sync --group core --group bigquery
+uv sync --group core --group snowflake
+uv sync --group core --group databricks
+uv sync --group core --group motherduck
 
 # Or everything at once
-pip install ".[all]"
+uv sync --group core --group all
 
 # Sync scripts only (no dbt adapter)
-pip install ".[sync]"
+uv sync --no-default-groups --group sync
 ```
+
+Every `dbt` command below then runs through `uv run dbt ...` so it uses the
+environment `uv sync` just created.
 
 ### 2. Configure credentials
 
@@ -83,7 +91,7 @@ Pass `--target` to choose the warehouse. Only that warehouse's models will run;
 the other warehouse's models are automatically disabled.
 
 ```bash
-dbt run --target <warehouse name>  --profiles-dir .
+uv run dbt run --target <warehouse name>  --profiles-dir .
 ```
 
 The default target (when `--target` is omitted) is `bigquery`. Change the
