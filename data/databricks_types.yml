@@ -61,6 +61,18 @@ types:
   example: st_geomfromwkt('POINT(-122.4194 37.7749)')
 - name: ARRAY
   example: array(1, 2, 3)
+- name: FILE
+  storable: true
+  example: >-
+    cast(
+      named_struct(
+        'uri', '/Volumes/my_catalog/my_schema/my_volume/report.pdf',
+        'offset', null,
+        'size', cast(19494 as BIGINT),
+        'content_type', 'application/pdf',
+        'checksum', 'ETAG:v1'
+      )
+    as FILE)
 - name: MAP
   example: map('a', 1, 'b', 2)
 - name: STRUCT
