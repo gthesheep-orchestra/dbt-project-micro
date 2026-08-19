@@ -1,8 +1,12 @@
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
+
 [project]
 name = "warehouse-types"
 version = "0.1.0"
 description = "A dbt project that creates a single-row table of every native data type for your warehouse"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4.0"
  
 [dependency-groups]
 core       = ["dbt-core"]
@@ -25,8 +29,6 @@ all        = [
 
 [tool.uv]
 default-groups = ["core", "bigquery"]
-# This is a dbt project, not an installable library — don't try to build/install
-# it as a package. Without this, `uv pip install .` (and plain `pip install .`)
-# fail with a setuptools "Multiple top-level packages discovered in a
-# flat-layout" error, because it tries to auto-package data/, models/, macros/.
-package = false
+
+[tool.poetry]
+packages = [{ include = "warehouse_types", from = "src" }]
