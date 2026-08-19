@@ -17,19 +17,22 @@ jobs:
   dbt-run:
     runs-on: ubuntu-latest
 
-    # On push/PR: run both warehouses in parallel.
-    # On manual dispatch: run only the chosen one.
+    # On push/PR: run every warehouse across every Python version currently
+    # supported by dbt-core's Active/Critical releases (1.12 and 1.11 both
+    # cover 3.10-3.13 — see https://docs.getdbt.com/faqs/Core/install-python-compatibility).
+    # On manual dispatch: run only the chosen warehouse, still across all
+    # four Python versions.
+    #
+    # fail-fast is off so one failing combo doesn't cancel the rest of the
+    # matrix — with 16 combos we want the full picture, not just the first
+    # failure.
     strategy:
+      fail-fast: false
       matrix:
         target: ${{ github.event_name == 'workflow_dispatch'
           && fromJson(format('["{0}"]', inputs.target))
           || fromJson('["bigquery", "snowflake", "databricks", "motherduck"]') }}
-
-        include:
-          - target: bigquery
-          - target: snowflake
-          - target: databricks
-          - target: motherduck
+        python-version: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
       - name: Checkout
@@ -38,13 +41,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        
+
       - name: Install dbt
-        run: uv sync --group core --group "${{ matrix.target }}"
+        run: uv sync --python "${{ matrix.python-version }}" --group core --group "${{ matrix.target }}"
 
       - name: Authenticate BigQuery
         if: matrix.target == 'bigquery'
@@ -52,7 +55,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
 
-      - name: dbt run — ${{ matrix.target }}
+      - name: dbt run — ${{ matrix.target }} (Python ${{ matrix.python-version }})
         env:
           # BigQuery
           BQ_PROJECT:  ${{ vars.BQ_PROJECT }}

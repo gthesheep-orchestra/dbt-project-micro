@@ -130,11 +130,14 @@ scripts/
 
 ### `dbt-run.yml`
 
-Runs on every push to `main` and every pull request. Runs both warehouses in
-parallel using a matrix strategy.
+Runs on every push to `main` and every pull request. Runs all four warehouses
+in parallel, each across every Python version currently supported by dbt-core
+(3.10–3.13 — see [dbt-core's Python compatibility matrix](https://docs.getdbt.com/faqs/Core/install-python-compatibility)),
+for 16 combinations total.
 
 Can also be triggered manually via **Actions → dbt run → Run workflow**, where
-you can choose a single warehouse from a dropdown.
+you can choose a single warehouse from a dropdown — it still runs across all
+four Python versions.
 
 Requires the following GitHub **secrets** and **variables**:
 
