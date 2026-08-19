@@ -20,10 +20,11 @@ uv run dbt run --target motherduck --profiles-dir .
 ### 1. Install
 
 Dependencies are declared as [PEP 735 dependency groups](https://peps.python.org/pep-0735/)
-in `pyproject.toml`, installed with [uv](https://docs.astral.sh/uv/getting-started/installation/).
-This project isn't a pip-installable package, so `pip install .` /
-`pip install ".[extra]"` won't work here — use `uv sync --group <name>` instead.
+in `pyproject.toml`. [uv](https://docs.astral.sh/uv/getting-started/installation/)
+is what CI uses and is the recommended tool, but
+[Poetry](https://python-poetry.org/) (2.0+) works too.
 
+**uv**
 ```bash
 # Install for your warehouse
 uv sync --group core --group bigquery
@@ -37,9 +38,31 @@ uv sync --group core --group all
 # Sync scripts only (no dbt adapter)
 uv sync --no-default-groups --group sync
 ```
-
 Every `dbt` command below then runs through `uv run dbt ...` so it uses the
 environment `uv sync` just created.
+
+**Poetry**
+```bash
+# Install for your warehouse
+poetry sync --only core,bigquery
+poetry sync --only core,snowflake
+poetry sync --only core,databricks
+poetry sync --only core,motherduck
+
+# Or everything at once
+poetry sync --only core,all
+
+# Sync scripts only (no dbt adapter)
+poetry sync --only sync
+```
+Unlike uv, Poetry has no notion of default groups — always pass `--only`
+with exactly the groups you want, or a plain `poetry sync` installs
+*everything* (every warehouse adapter plus the sync-script deps). Run dbt
+commands with `poetry run dbt ...`.
+
+> Plain `pip install --group core --group bigquery .` (pip ≥25.1) also works
+> now, if you'd rather not install either tool — but `pip install ".[extra]"`
+> still won't, since these are dependency groups, not extras.
 
 ### 2. Configure credentials
 
