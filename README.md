@@ -135,6 +135,7 @@ data/
 macros/
   bigquery_type_examples.sql   ← reads bigquery_types.yml, generates SELECT
   snowflake_type_examples.sql  ← reads snowflake_types.yml, generates SELECT
+  <warehouse>_types.sql        ← generated copy of data/<warehouse>_types.yml (dbt can't read files)
 
 scripts/
   sync_bigquery_types.py   ← scrapes BigQuery docs, updates bigquery_types.yml

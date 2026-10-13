@@ -1,5 +1,5 @@
 {% macro motherduck_type_examples() %}
-    {% set types = fromyaml(load_file('data/motherduck_types.yml')).types %}
+    {% set types = fromyaml(motherduck_types_yaml()).types %}
     {% set usable = types
         | selectattr('storable', 'ne', false)
         | selectattr('example')

@@ -21,6 +21,7 @@ import yaml
 
 DOCS_URL  = "https://duckdb.org/docs/sql/data_types/overview"
 YAML_PATH = Path(__file__).parent.parent / "data" / "motherduck_types.yml"
+MACRO_PATH = Path(__file__).parent.parent / "macros" / "motherduck_types.sql"
 
 # Known example expressions; new types discovered get a TODO placeholder.
 KNOWN_EXAMPLES: dict[str, str | None] = {
@@ -58,7 +59,7 @@ KNOWN_EXAMPLES: dict[str, str | None] = {
     "STRUCT":                   "{'id': 42, 'name': 'hello'}",
     "MAP":                      "map(['a', 'b'], [1, 2])",
     "UNION":                    "union_value(num := 42)",
-    "VARIANT":                  "to_variant(42)",
+    "VARIANT":                  "cast(42 as VARIANT)",
     "GEOMETRY":                 None,  # requires LOAD spatial
 }
 
@@ -96,6 +97,12 @@ def write_yaml(data: dict) -> None:
     with YAML_PATH.open("w") as f:
         f.write(header)
         yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    # dbt has no file-reading builtin, so mirror the YAML into a macro the model can call.
+    MACRO_PATH.write_text(
+        "{% macro motherduck_types_yaml() %}{% raw %}\n"
+        + YAML_PATH.read_text()
+        + "{% endraw %}{% endmacro %}\n"
+    )
 
 
 def main() -> None:

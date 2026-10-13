@@ -87,7 +87,7 @@ jobs:
       - name: Check for changes
         id: check
         run: |
-          if git diff --quiet "data/${{ matrix.warehouse }}_types.yml"; then
+          if git diff --quiet "data/${{ matrix.warehouse }}_types.yml" "macros/${{ matrix.warehouse }}_types.sql"; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -101,7 +101,9 @@ jobs:
           branch: ${{ matrix.branch }}
           commit-message: ${{ matrix.title }}
           title: ${{ matrix.title }}
-          add-paths: data/${{ matrix.warehouse }}_types.yml   # ← only this file
+          add-paths: |   # ← only these files
+            data/${{ matrix.warehouse }}_types.yml
+            macros/${{ matrix.warehouse }}_types.sql
           body: |
             ${{ matrix.body }}
             Newly added types will have a `TODO` example — fill in the SQL before merging.

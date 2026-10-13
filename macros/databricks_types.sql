@@ -1,0 +1,85 @@
+{% macro databricks_types_yaml() %}{% raw %}
+# Canonical list of Databricks SQL data types.
+# Source: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-datatypes
+# DO NOT edit manually — updated automatically via .github/workflows/sync-databricks-types.yml
+
+types:
+- name: BIGINT
+  synonyms:
+  - LONG
+  example: cast(42 as BIGINT)
+- name: BINARY
+  example: cast('hello' as BINARY)
+- name: BOOLEAN
+  example: cast(true as BOOLEAN)
+- name: DATE
+  example: cast('2024-01-01' as DATE)
+- name: DECIMAL
+  synonyms:
+  - DEC
+  - NUMERIC
+  example: cast(3.14 as DECIMAL(10, 2))
+- name: DOUBLE
+  synonyms:
+  - DOUBLE PRECISION
+  example: cast(3.14 as DOUBLE)
+- name: FLOAT
+  synonyms:
+  - REAL
+  example: cast(3.14 as FLOAT)
+- name: INT
+  synonyms:
+  - INTEGER
+  example: cast(42 as INT)
+- name: INTERVAL
+  example: INTERVAL '1' YEAR
+- name: VOID
+  storable: false
+  example: null
+- name: SMALLINT
+  synonyms:
+  - SHORT
+  example: cast(1 as SMALLINT)
+- name: STRING
+  synonyms:
+  - VARCHAR
+  - CHAR
+  example: cast('hello' as STRING)
+- name: TIME
+  storable: true
+  example: TODO -- add example for TIME
+- name: TIMESTAMP
+  example: cast('2024-01-01 12:34:56' as TIMESTAMP)
+- name: TIMESTAMP_NTZ
+  example: cast('2024-01-01 12:34:56' as TIMESTAMP_NTZ)
+- name: TINYINT
+  synonyms:
+  - BYTE
+  example: cast(1 as TINYINT)
+- name: GEOGRAPHY
+  example: st_geogpoint(-122.4194, 37.7749)
+- name: GEOMETRY
+  example: st_geomfromwkt('POINT(-122.4194 37.7749)')
+- name: ARRAY
+  example: array(1, 2, 3)
+- name: FILE
+  storable: true
+  example: >-
+    cast(
+      named_struct(
+        'uri', '/Volumes/my_catalog/my_schema/my_volume/report.pdf',
+        'offset', null,
+        'size', cast(19494 as BIGINT),
+        'content_type', 'application/pdf',
+        'checksum', 'ETAG:v1'
+      )
+    as FILE)
+- name: MAP
+  example: map('a', 1, 'b', 2)
+- name: STRUCT
+  example: struct(42 as id, 'hello' as name)
+- name: VARIANT
+  example: 'parse_json(''{"key": "value"}'')'
+- name: OBJECT
+  example: 'cast(parse_json(''{"key": "value"}'') as OBJECT)'
+{% endraw %}{% endmacro %}

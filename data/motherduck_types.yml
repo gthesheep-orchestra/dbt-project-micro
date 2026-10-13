@@ -147,7 +147,7 @@ types:
 
   # ── Semi-structured ────────────────────────────────────────────────────────
   - name: VARIANT
-    example: "to_variant(42)"
+    example: "cast(42 as VARIANT)"
 
   # ── Geospatial (requires LOAD spatial) ────────────────────────────────────
   - name: GEOMETRY
