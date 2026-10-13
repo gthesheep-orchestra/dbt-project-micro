@@ -15,7 +15,7 @@ on:
 
 jobs:
   dbt-run:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     # On push/PR: run every warehouse across every Python version currently
     # supported by dbt-core's Active/Critical releases (1.12 and 1.11 both
@@ -45,6 +45,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-suffix: ${{ matrix.target }}-${{ matrix.python-version }}  # per-job key so parallel jobs don't race to save one cache
 
       - name: Install dbt
         run: uv sync --python "${{ matrix.python-version }}" --group core --group "${{ matrix.target }}"

@@ -14,7 +14,7 @@ on:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       pull-requests: write
@@ -70,7 +70,9 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        
+        with:
+          cache-suffix: ${{ matrix.warehouse }}  # per-job key so parallel jobs don't race to save one cache
+
       - name: Install dependencies
         run: |
           uv sync --group sync
