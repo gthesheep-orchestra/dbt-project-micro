@@ -21,6 +21,7 @@ from bs4 import BeautifulSoup
 
 DOCS_URL  = "https://docs.snowflake.com/en/sql-reference/intro-summary-data-types"
 YAML_PATH = Path(__file__).parent.parent / "data" / "snowflake_types.yml"
+MACRO_PATH = Path(__file__).parent.parent / "macros" / "snowflake_types.sql"
 
 KNOWN_EXAMPLES: dict[str, str | None] = {
     "NUMBER":        "cast(42 as NUMBER)",
@@ -137,6 +138,12 @@ def write_yaml(data: dict) -> None:
     with YAML_PATH.open("w") as f:
         f.write(header)
         yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    # dbt has no file-reading builtin, so mirror the YAML into a macro the model can call.
+    MACRO_PATH.write_text(
+        "{% macro snowflake_types_yaml() %}{% raw %}\n"
+        + YAML_PATH.read_text()
+        + "{% endraw %}{% endmacro %}\n"
+    )
 
 
 def main() -> None:

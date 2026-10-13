@@ -21,6 +21,7 @@ from bs4 import BeautifulSoup
 
 DOCS_URL  = "https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-datatypes"
 YAML_PATH = Path(__file__).parent.parent / "data" / "databricks_types.yml"
+MACRO_PATH = Path(__file__).parent.parent / "macros" / "databricks_types.sql"
 
 # Known example expressions for all current types.
 # New types discovered by the scraper will get a TODO placeholder.
@@ -127,6 +128,12 @@ def write_yaml(data: dict) -> None:
     with YAML_PATH.open("w") as f:
         f.write(header)
         yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    # dbt has no file-reading builtin, so mirror the YAML into a macro the model can call.
+    MACRO_PATH.write_text(
+        "{% macro databricks_types_yaml() %}{% raw %}\n"
+        + YAML_PATH.read_text()
+        + "{% endraw %}{% endmacro %}\n"
+    )
 
 
 def main() -> None:

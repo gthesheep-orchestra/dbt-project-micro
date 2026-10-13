@@ -1,0 +1,117 @@
+{% macro snowflake_types_yaml() %}{% raw %}
+# Canonical list of Snowflake SQL data types.
+# Source: https://docs.snowflake.com/en/sql-reference/intro-summary-data-types
+# DO NOT edit manually — updated automatically via .github/workflows/sync-snowflake-types.yml
+#
+# 'synonyms' lists alternative names accepted by Snowflake for the same type.
+# 'storable' is false for types that can't be used as a table column (e.g. FILE).
+# 'example' is the SQL expression used in the dbt model; null excludes the column.
+
+types:
+- name: NUMBER
+  synonyms: []
+  storable: true
+  example: cast(42 as NUMBER)
+- name: SYNONYMOUS WITH NUMBER.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH NUMBER.
+- name: SYNONYMOUS WITH NUMBER
+  synonyms:
+  - EXCEPT PRECISION AND SCALE CAN’T BE SPECIFIED.
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH NUMBER
+- name: '[1]'
+  synonyms: []
+  storable: true
+  example: TODO -- add example for [1]
+- name: SYNONYMOUS WITH FLOAT.
+  synonyms:
+  - '[1]'
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH FLOAT.
+- name: STORES NUMBERS EXACTLY
+  synonyms:
+  - WITH UP TO 38 SIGNIFICANT DIGITS OF PRECISION
+  - AND USES A DYNAMIC BASE-10 EXPONENT.
+  storable: true
+  example: TODO -- add example for STORES NUMBERS EXACTLY
+- name: VARCHAR
+  synonyms: []
+  storable: true
+  example: cast('hello' as VARCHAR)
+- name: SYNONYMOUS WITH VARCHAR
+  synonyms:
+  - EXCEPT THE DEFAULT LENGTH IS VARCHAR(1).
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH VARCHAR
+- name: SYNONYMOUS WITH VARCHAR.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH VARCHAR.
+- name: SYNONYMOUS WITH BINARY.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH BINARY.
+- name: BOOLEAN
+  synonyms: []
+  storable: true
+  example: cast(true as BOOLEAN)
+- name: DATE
+  synonyms: []
+  storable: true
+  example: cast('2024-01-01' as DATE)
+- name: SYNONYMOUS WITH TIMESTAMP_NTZ.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for SYNONYMOUS WITH TIMESTAMP_NTZ.
+- name: ALIAS FOR ONE OF THE TIMESTAMP VARIATIONS (TIMESTAMP_NTZ BY DEFAULT).
+  synonyms: []
+  storable: true
+  example: TODO -- add example for ALIAS FOR ONE OF THE TIMESTAMP VARIATIONS (TIMESTAMP_NTZ
+    BY DEFAULT).
+- name: TIMESTAMP WITH LOCAL TIME ZONE; TIME ZONE
+  synonyms:
+  - IF PROVIDED
+  - ISN’T STORED.
+  storable: true
+  example: TODO -- add example for TIMESTAMP WITH LOCAL TIME ZONE; TIME ZONE
+- name: TIMESTAMP WITH NO TIME ZONE; TIME ZONE
+  synonyms:
+  - IF PROVIDED
+  - ISN’T STORED.
+  storable: true
+  example: TODO -- add example for TIMESTAMP WITH NO TIME ZONE; TIME ZONE
+- name: TIMESTAMP WITH TIME ZONE.
+  synonyms: []
+  storable: true
+  example: TODO -- add example for TIMESTAMP WITH TIME ZONE.
+- name: VARIANT
+  synonyms: []
+  storable: true
+  example: 'parse_json(''{"key": "value"}'')'
+- name: ARRAY
+  synonyms: []
+  storable: true
+  example: parse_json('[1, 2, 3]')::ARRAY
+- name: FILE
+  synonyms: []
+  storable: false
+  example: null
+- name: GEOGRAPHY
+  synonyms: []
+  storable: true
+  example: to_geography('POINT(-122.4194 37.7749)')
+- name: UUID
+  synonyms: []
+  storable: true
+  example: uuid_string()::UUID
+- name: VECTOR
+  synonyms: []
+  storable: true
+  example: '[1.0, 2.0, 3.0]::VECTOR(FLOAT, 3)'
+- name: UNKNOWN
+  synonyms: []
+  storable: true
+  example: TODO -- add example for UNKNOWN
+{% endraw %}{% endmacro %}

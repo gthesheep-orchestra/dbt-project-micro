@@ -1,5 +1,5 @@
 {% macro databricks_type_examples() %}
-    {% set types = fromyaml(load_file('data/databricks_types.yml')).types %}
+    {% set types = fromyaml(databricks_types_yaml()).types %}
     {% set usable = types
         | selectattr('storable', 'ne', false)
         | selectattr('example')

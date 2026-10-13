@@ -21,6 +21,7 @@ from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 DOCS_URL = "https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types"
 YAML_PATH = Path(__file__).parent.parent / "data" / "bigquery_types.yml"
+MACRO_PATH = Path(__file__).parent.parent / "macros" / "bigquery_types.sql"
 
 # Internal / non-user-facing values present in the enum but not real SQL types.
 _SKIP = {"TYPE_KIND_UNSPECIFIED", "FOREIGN"}
@@ -71,6 +72,12 @@ def write_yaml(data: dict) -> None:
     with YAML_PATH.open("w") as f:
         f.write(header)
         yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    # dbt has no file-reading builtin, so mirror the YAML into a macro the model can call.
+    MACRO_PATH.write_text(
+        "{% macro bigquery_types_yaml() %}{% raw %}\n"
+        + YAML_PATH.read_text()
+        + "{% endraw %}{% endmacro %}\n"
+    )
 
 
 def main() -> None:
