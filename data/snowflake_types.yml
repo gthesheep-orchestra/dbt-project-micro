@@ -101,6 +101,10 @@ types:
   synonyms: []
   storable: true
   example: to_geography('POINT(-122.4194 37.7749)')
+- name: IPADDRESS
+  synonyms: []
+  storable: true
+  example: TODO -- add example for IPADDRESS
 - name: UUID
   synonyms: []
   storable: true
